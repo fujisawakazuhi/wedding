@@ -131,6 +131,7 @@
   .item:last-of-type{border-bottom:1px solid var(--line)}
   .item .lab{font-family:var(--serif);font-weight:600;font-size:.72rem;letter-spacing:.28em;color:var(--slate)}
   .item .val{font-family:var(--serif);font-weight:500;font-size:1.12rem;line-height:1.7;margin-top:.45em}
+  .item .sub a{color:inherit;text-decoration-color:var(--line);text-underline-offset:3px}
   .item .sub{display:block;font-family:var(--serif);font-weight:400;font-size:.9rem;color:var(--muted);margin-top:.4em}
   /* lounge & breakfast hours */
   .hours{list-style:none;margin-top:.8em}
@@ -163,6 +164,8 @@
   .foot-content .f-thanks{margin-top:2.2em;font-family:var(--serif);font-weight:400;font-size:1.04rem;letter-spacing:.02em;color:rgba(255,255,255,.9)}
 
   @media (min-width:640px){ .panel{padding:0 32px 128px} .panel.first{padding-top:128px} }
+  .panel.greet{padding-top:64px;padding-bottom:64px}
+  @media (min-width:640px){ .panel.greet{padding-top:80px;padding-bottom:80px} }
   @media (max-width:640px){
     .hero,footer{height:auto;aspect-ratio:100/140;min-height:0}
     .media img{object-position:43% 48%}
@@ -251,7 +254,6 @@
   <!-- MESSAGE -->
   <section class="panel greet reveal first">
     <div class="panel-inner">
-      <p class="kick">Message</p>
       <p class="lead">See you in Okinawa!</p>
     </div>
   </section>
@@ -425,6 +427,18 @@
             <li><span class="h-t">6:30–10:00</span><span class="h-w">池畔餐廳「南露台」<small>Southern&nbsp;Terrace 1F 日式或西式套餐 最後點餐&nbsp;9:30<br>座位有限 請儘早預約</small></span></li>
             <li><span class="h-t">7:00–10:00</span><span class="h-w">貴賓休息室<small>歐陸式自助餐 最後點餐&nbsp;9:30</small></span></li>
           </ul>
+        </div>
+        <div class="item">
+          <div class="lab">泳池</div>
+          <div class="val">飯店的戶外泳池 Garden Pool
+            <span class="sub">5 個圓形泳池串連 全長約 70 公尺 還有滑水道<br>開放到 10/31　10 月是 9:00–18:00</span>
+          </div>
+        </div>
+        <div class="item">
+          <div class="lab">海灘</div>
+          <div class="val">走路 5 分鐘就有小海灘
+            <span class="sub"><a href="https://www.google.com/maps/search/?api=1&query=%E7%BE%8E%E3%80%85%E3%83%93%E3%83%BC%E3%83%81%E3%81%84%E3%81%A8%E3%81%BE%E3%82%93" target="_blank" rel="noopener">美々ビーチいとまん</a> 公共海灘 不是飯店的喔<br>開放到 10/31　遊泳時間 9:00–18:00</span>
+          </div>
         </div>
         <div class="item">
           <div class="lab">車程</div>
