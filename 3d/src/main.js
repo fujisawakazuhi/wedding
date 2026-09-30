@@ -23,11 +23,11 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.shadowMap.autoUpdate = false;          // refreshed every few frames in the loop
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xD9F2FF, 70, 170);
+scene.fog = new THREE.Fog(0xDFE7EB, 70, 170);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
 
 // ---------- materials & helpers ----------
-const grad = new THREE.DataTexture(new Uint8Array([120, 190, 255]), 3, 1, THREE.RedFormat);
+const grad = new THREE.DataTexture(new Uint8Array([150, 205, 255]), 3, 1, THREE.RedFormat);
 grad.minFilter = grad.magFilter = THREE.NearestFilter;
 grad.needsUpdate = true;
 const mats = new Map();
@@ -54,33 +54,43 @@ function tex(url) {
   t.anisotropy = 4;
   return t;
 }
-function textTexture(text, { w = 512, h = 128, size = 64, color = '#2F4858', bg = null, border = null, font = 'Fredoka' } = {}) {
+// signs use the main page's serif; `spacing` is letter spacing in px (drawn per letter, works everywhere)
+function textTexture(text, { w = 512, h = 128, size = 64, color = '#3B4747', bg = null, border = null, font = "'Cormorant Garamond'",
+  weight = 600, style = '', spacing = 0 } = {}) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  const css = `${style} ${weight} ${size}px ${font}`.trim();
   const draw = () => {
     const g = c.getContext('2d');
     g.clearRect(0, 0, w, h);
     if (bg) {
       g.fillStyle = bg;
-      g.beginPath(); if (g.roundRect) g.roundRect(6, 6, w - 12, h - 12, 26); else g.rect(6, 6, w - 12, h - 12); g.fill();
-      if (border) { g.lineWidth = 8; g.strokeStyle = border; g.stroke(); }
+      g.beginPath(); if (g.roundRect) g.roundRect(6, 6, w - 12, h - 12, 20); else g.rect(6, 6, w - 12, h - 12); g.fill();
+      if (border) { g.lineWidth = 4; g.strokeStyle = border; g.stroke(); }
     }
     g.fillStyle = color;
-    g.font = `700 ${size}px ${font}, 'LXGW WenKai TC', sans-serif`;
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(text, w / 2, h / 2 + 3);
+    g.font = `${css}, 'LXGW WenKai TC', serif`;
+    g.textBaseline = 'middle';
+    const y = h / 2 + 2, chars = [...text];
+    if (!spacing) { g.textAlign = 'center'; g.fillText(text, w / 2, y); }
+    else {
+      const ws = chars.map(ch => g.measureText(ch).width);
+      let x = w / 2 - (ws.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1)) / 2;
+      g.textAlign = 'left';
+      chars.forEach((ch, i) => { g.fillText(ch, x, y); x += ws[i] + spacing; });
+    }
     t.needsUpdate = true;
   };
   draw();
-  if (document.fonts) document.fonts.load(`700 ${size}px ${font}`).then(draw, () => {});
+  if (document.fonts) document.fonts.load(css, text).then(draw, () => {});
   return t;
 }
 
 // ---------- light ----------
-scene.add(new THREE.HemisphereLight(0xF4FBFF, 0xEAD7AE, 1.35));
-const sun = new THREE.DirectionalLight(0xFFF1DC, 2.1);
+scene.add(new THREE.HemisphereLight(0xF7F6F0, 0xE2DBC8, 1.7));
+const sun = new THREE.DirectionalLight(0xFFF5E8, 1.5);
 sun.position.set(14, 24, 12);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -95,7 +105,7 @@ const seaGeo = new THREE.PlaneGeometry(280, 280, 84, 84);
 seaGeo.rotateX(-Math.PI / 2);
 const seaBase = seaGeo.attributes.position.array.slice();
 {
-  const deep = new THREE.Color(0x2BAFCB), shallow = new THREE.Color(0x92ECE0), c = new THREE.Color();
+  const deep = new THREE.Color(0x8FB1C5), shallow = new THREE.Color(0xCDE1E3), c = new THREE.Color();
   const cols = new Float32Array(seaGeo.attributes.position.count * 3);
   for (let i = 0; i < seaGeo.attributes.position.count; i++) {
     const d = Math.hypot(seaBase[i * 3], seaBase[i * 3 + 2]);
@@ -104,7 +114,7 @@ const seaBase = seaGeo.attributes.position.array.slice();
   }
   seaGeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
 }
-const sea = new THREE.Mesh(seaGeo, new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 80, specular: 0xCFFAFF, flatShading: true }));
+const sea = new THREE.Mesh(seaGeo, new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 50, specular: 0xDDE8E6, flatShading: true }));
 sea.position.y = SEA_Y;
 sea.receiveShadow = true;
 scene.add(sea);
@@ -133,10 +143,10 @@ function blob(r, h, seg, amp, seed) {
   return g;
 }
 const G = 0.75, SAND = 0.4;                                   // grass top / sand top
-mesh(blob(11, 1.2, 64, 0.06, 1.3), toon(0xF6E0AC), 0, SAND - 0.6, 0, scene, false);
-mesh(blob(9.3, 0.5, 64, 0.07, 2.1), toon(0x94DA8B), 0, G - 0.25, 0, scene, false);
+mesh(blob(11, 1.2, 64, 0.06, 1.3), toon(0xEFE4C9), 0, SAND - 0.6, 0, scene, false);
+mesh(blob(9.3, 0.5, 64, 0.07, 2.1), toon(0xBACBA5), 0, G - 0.25, 0, scene, false);
 const HILL = { x: -4.8, z: -2.8, r: 3.1, h: 0.7 };            // little hill under the chapel
-const hill = mesh(blob(HILL.r, HILL.h, 32, 0.06, 4), toon(0x8AD381), HILL.x, G + HILL.h / 2, HILL.z, scene, false);
+const hill = mesh(blob(HILL.r, HILL.h, 32, 0.06, 4), toon(0xAEC29B), HILL.x, G + HILL.h / 2, HILL.z, scene, false);
 const groundY = (x, z) => Math.hypot(x, z) < 8.9 ? G : SAND;
 
 const clickables = [];
@@ -161,7 +171,7 @@ function palm(x, z, h = 3.2, lean = 0.22, rot = 0) {
   const g = new THREE.Group();
   g.position.set(x, groundY(x, z), z);
   g.rotation.y = rot;
-  const trunk = toon(0xC99B6B), leaf = toon(0x44B764, { side: THREE.DoubleSide });
+  const trunk = toon(0xB49C82), leaf = toon(0x7E9F7C, { side: THREE.DoubleSide });
   let px = 0, py = 0;
   const segs = 4;
   for (let i = 0; i < segs; i++) {
@@ -177,7 +187,7 @@ function palm(x, z, h = 3.2, lean = 0.22, rot = 0) {
     const l = mesh(leafGeo, leaf, 0, 0, 0, crown);
     l.rotation.y = (i / 6) * Math.PI * 2 + rand(-0.2, 0.2);
   }
-  const nut = toon(0x7A5230);
+  const nut = toon(0x8A7058);
   mesh(new THREE.IcosahedronGeometry(0.13, 0), nut, 0.12, -0.12, 0.08, crown);
   mesh(new THREE.IcosahedronGeometry(0.13, 0), nut, -0.08, -0.14, -0.1, crown);
   crown.userData.phase = rand(0, 6);
@@ -192,7 +202,7 @@ function palm(x, z, h = 3.2, lean = 0.22, rot = 0) {
 // ---------- chapel (婚禮資訊) ----------
 function buildChapel() {
   const g = new THREE.Group();
-  const white = toon(0xFFFDF5), roof = toon(0xF2785F), blue = toon(0x7ECFE6), wood = toon(0x8A5A3C), gold = toon(0xFFD35C);
+  const white = toon(0xFBFAF5), roof = toon(0xC98F72), blue = toon(0xA3C0C0), wood = toon(0x8C735E), gold = toon(0xD4B272);
   mesh(box(2.4, 1.8, 3.2), white, 0, 0.9, 0, g);
   const r = mesh(new THREE.CylinderGeometry(1.56, 1.56, 3.4, 3, 1), roof, 0, 2.27, -0.05, g);
   r.rotation.x = -Math.PI / 2;
@@ -226,7 +236,7 @@ buildChapel();
 // ---------- hotel + garden pool (住宿) ----------
 function buildHotel() {
   const g = new THREE.Group();
-  const cream = toon(0xFFF3DA), teal = toon(0x4FB9C7), glass = toon(0x9EE4F2), coral = toon(0xF08A6E), white = toon(0xFFFFFF);
+  const cream = toon(0xF2EDE1), teal = toon(0x87A3A3), glass = toon(0xC9DCDC), coral = toon(0xC98F72), white = toon(0xFBFAF5);
   mesh(box(4.4, 4.0, 2.2), cream, 0, 2.0, 0, g);
   mesh(box(4.7, 0.28, 2.5), teal, 0, 4.14, 0, g);
   mesh(box(1.2, 0.5, 1.0), cream, 1.3, 4.53, 0, g);
@@ -243,7 +253,7 @@ function buildHotel() {
   mesh(box(1.9, 0.12, 0.85), coral, 0, 0.95, 1.45, g);
   for (const s of [-0.8, 0.8]) mesh(cyl(0.04, 0.04, 0.9, 6), white, s, 0.45, 1.8, g);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.58), new THREE.MeshBasicMaterial({
-    map: textTexture('HOTEL', { bg: '#FFFFFF', border: '#2F4858', color: '#F2785F', size: 76 }), transparent: true }));
+    map: textTexture('HOTEL', { bg: '#FBFAF6', border: '#C4C3B6', color: '#3B4747', size: 70, spacing: 16 }), transparent: true }));
   sign.position.set(-0.7, 4.62, 1.27);
   g.add(sign);
   g.position.set(4.6, G, -3.4);
@@ -253,14 +263,14 @@ function buildHotel() {
 
   // Garden Pool: five connected round pools
   const pool = new THREE.Group();
-  mesh(box(5.0, 0.08, 2.0), toon(0xF6EAD2), 0, 0.04, 0, pool, false);
-  const water = toon(0x5FDDF3, { emissive: 0x0E5C66, emissiveIntensity: 0.25 });
+  mesh(box(5.0, 0.08, 2.0), toon(0xEEE7D7), 0, 0.04, 0, pool, false);
+  const water = toon(0xA6D0D4, { emissive: 0x2E5E60, emissiveIntensity: 0.15 });
   [[-1.8, 0.25], [-0.85, -0.25], [0.1, 0.15], [1.05, -0.28], [1.95, 0.2]].forEach(([x, z]) => {
     mesh(cyl(0.62, 0.62, 0.06, 28), water, x, 0.1, z, pool, false);
     const rim = mesh(new THREE.TorusGeometry(0.62, 0.05, 6, 28), white, x, 0.13, z, pool, false);
     rim.rotation.x = Math.PI / 2;
   });
-  for (const [x, z, c] of [[-2.2, -0.7, 0xFF7A6B], [2.3, -0.65, 0xFFD35C]]) {
+  for (const [x, z, c] of [[-2.2, -0.7, 0xD8A9A2], [2.3, -0.65, 0xE0C48F]]) {
     mesh(cyl(0.025, 0.025, 0.9, 6), white, x, 0.45, z, pool);
     mesh(new THREE.ConeGeometry(0.42, 0.22, 8), toon(c), x, 0.95, z, pool);
   }
@@ -272,8 +282,8 @@ function buildHotel() {
   // the little public beach nearby
   const beach = new THREE.Group();
   mesh(cyl(0.03, 0.03, 1.3, 6), white, 0, 0.65, 0, beach);
-  mesh(new THREE.ConeGeometry(0.75, 0.35, 8), toon(0xFF8FAB), 0, 1.35, 0, beach);
-  mesh(box(0.7, 0.03, 1.3), toon(0x9FD8FF), 0.55, 0.02, 0.3, beach, false);
+  mesh(new THREE.ConeGeometry(0.75, 0.35, 8), toon(0xDDB1AA), 0, 1.35, 0, beach);
+  mesh(box(0.7, 0.03, 1.3), toon(0xBFD4D6), 0.55, 0.02, 0.3, beach, false);
   beach.position.set(9.4, SAND, 3.1);
   beach.rotation.y = 0.6;
   scene.add(beach);
@@ -285,7 +295,7 @@ buildHotel();
 const hands = {};
 function buildClock() {
   const g = new THREE.Group();
-  const wood = toon(0xB9855B), white = toon(0xFFFFFF), coral = toon(0xFF7A6B), ink = toon(0x2F4858);
+  const wood = toon(0xA88C72), white = toon(0xFBFAF5), coral = toon(0xC98F72), ink = toon(0x26302F);
   mesh(cyl(0.12, 0.15, 2.6, 8), wood, 0, 1.3, 0, g);
   const face = new THREE.Group();
   face.position.set(0, 2.95, 0);
@@ -302,7 +312,7 @@ function buildClock() {
   hands.h = mesh(hg, ink, 0, 0, 0.13, face, false);
   hands.m = mesh(mg, coral, 0, 0, 0.15, face, false);
   mesh(new THREE.ConeGeometry(0.55, 0.5, 6), coral, 0, 4.1, 0, g);
-  mesh(box(1.0, 0.35, 0.5), toon(0xD9A876), 0, 0.18, 0.3, g);
+  mesh(box(1.0, 0.35, 0.5), toon(0xC9AF90), 0, 0.18, 0.3, g);
   g.position.set(0.3, G, 1.2);
   scene.add(g);
   tag(g, 'schedule');
@@ -313,8 +323,8 @@ function buildClock() {
     const a = (i / 3) * Math.PI * 2;
     mesh(cyl(0.025, 0.025, 0.55, 5), ink, Math.cos(a) * 0.2, 0.27, Math.sin(a) * 0.2, bbq);
   }
-  mesh(cyl(0.36, 0.26, 0.26, 16), toon(0x3A3A3A), 0, 0.64, 0, bbq);
-  mesh(cyl(0.34, 0.34, 0.03, 16), toon(0xC0C0C0), 0, 0.78, 0, bbq, false);
+  mesh(cyl(0.36, 0.26, 0.26, 16), toon(0x4B504F), 0, 0.64, 0, bbq);
+  mesh(cyl(0.34, 0.34, 0.03, 16), toon(0xBDBCB4), 0, 0.78, 0, bbq, false);
   bbq.position.set(7.0, G, 1.5);
   scene.add(bbq);
   tag(bbq, 'schedule');
@@ -323,7 +333,7 @@ function buildClock() {
 const bbq = buildClock();
 const smoke = [];
 for (let i = 0; i < 4; i++) {
-  const s = mesh(new THREE.IcosahedronGeometry(0.12, 0), new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.7 }), 0, 0, 0, bbq, false);
+  const s = mesh(new THREE.IcosahedronGeometry(0.12, 0), new THREE.MeshBasicMaterial({ color: 0xFBFAF5, transparent: true, opacity: 0.7 }), 0, 0, 0, bbq, false);
   s.userData.off = i / 4;
   smoke.push(s);
 }
@@ -331,13 +341,13 @@ for (let i = 0; i < 4; i++) {
 // ---------- shirt stall (服裝) ----------
 function buildStall() {
   const g = new THREE.Group();
-  const white = toon(0xFFF7EA), wood = toon(0xB9855B);
+  const white = toon(0xF6F2E8), wood = toon(0xA88C72);
   mesh(box(2.0, 0.8, 0.8), white, 0, 0.4, -0.3, g);
   for (const [x, z] of [[-0.95, -0.65], [0.95, -0.65], [-0.95, 0.55], [0.95, 0.55]]) mesh(cyl(0.05, 0.05, 2.1, 6), wood, x, 1.05, z, g);
   const sc = document.createElement('canvas');
   sc.width = 128; sc.height = 8;
   const sg = sc.getContext('2d');
-  for (let i = 0; i < 8; i++) { sg.fillStyle = i % 2 ? '#FFFFFF' : '#FF7A6B'; sg.fillRect(i * 16, 0, 16, 8); }
+  for (let i = 0; i < 8; i++) { sg.fillStyle = i % 2 ? '#F7F5EF' : '#C98F72'; sg.fillRect(i * 16, 0, 16, 8); }
   const stripes = new THREE.CanvasTexture(sc);
   stripes.colorSpace = THREE.SRGBColorSpace;
   const awn = mesh(box(2.4, 0.12, 1.5), new THREE.MeshToonMaterial({ map: stripes, gradientMap: grad }), 0, 2.15, -0.05, g);
@@ -351,7 +361,7 @@ function buildStall() {
     g.add(s);
   }
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({
-    map: textTexture('ALOHA', { bg: '#FFFFFF', border: '#2F4858', color: '#2C5A8C', size: 70 }), transparent: true }));
+    map: textTexture('ALOHA', { bg: '#FBFAF6', border: '#C4C3B6', color: '#2C5A6B', size: 66, spacing: 12 }), transparent: true }));
   sign.position.set(0, 2.45, 0.72);
   g.add(sign);
   g.position.set(-4.5, G, 3.4);
@@ -364,7 +374,7 @@ buildStall();
 // ---------- photo spot with the couple's photos (照片) ----------
 function buildPhotoSpot() {
   const g = new THREE.Group();
-  const white = toon(0xFFFFFF), wood = toon(0xB9855B);
+  const white = toon(0xFBFAF5), wood = toon(0xA88C72);
   const hs = new THREE.Shape();
   hs.moveTo(0.25, 0.25);
   hs.bezierCurveTo(0.25, 0.25, 0.2, 0, 0, 0);
@@ -375,7 +385,7 @@ function buildPhotoSpot() {
   hs.bezierCurveTo(0.35, 0, 0.25, 0.25, 0.25, 0.25);
   const hg = new THREE.ExtrudeGeometry(hs, { depth: 0.18, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 2, curveSegments: 16 });
   hg.center();
-  const heart = mesh(hg, toon(0xFF8FAB), 0, 3.05, -0.35, g);
+  const heart = mesh(hg, toon(0xE2ADB0), 0, 3.05, -0.35, g);
   heart.rotation.z = Math.PI;
   heart.scale.setScalar(1.6);
   heart.userData.beat = true;
@@ -413,14 +423,14 @@ const heart = buildPhotoSpot();
     const e = new THREE.Vector2(ex, ez), len = hub.distanceTo(e);
     for (let s = 0.9; s < len - 0.3; s += 0.75) pts.push(hub.clone().lerp(e, s / len));
   }
-  const stones = new THREE.InstancedMesh(cyl(0.26, 0.28, 0.06, 10), toon(0xF3EBD8), pts.length);
+  const stones = new THREE.InstancedMesh(cyl(0.26, 0.28, 0.06, 10), toon(0xEDE6D5), pts.length);
   const d = new THREE.Object3D();
   pts.forEach((p, i) => { d.position.set(p.x, G + 0.02, p.y); d.rotation.y = rand(0, 3); d.updateMatrix(); stones.setMatrixAt(i, d.matrix); });
   stones.receiveShadow = true;
   scene.add(stones);
 
   const keepOut = [[HILL.x, HILL.z, HILL.r + 0.3], [4.6, -3.4, 3.2], [3.9, 0.3, 2.8], [0.3, 1.2, 1.2], [-4.5, 3.4, 1.8], [2.8, 4.9, 2.2], [7.0, 1.5, 0.8]];
-  const colors = [0xFF6F7D, 0xFFB3C6, 0xFFE066, 0xFFFFFF, 0xFF9E6B].map(c => new THREE.Color(c));
+  const colors = [0xE2A6A6, 0xF3DADA, 0xE9D6A8, 0xFBFAF5, 0xD9A27C].map(c => new THREE.Color(c));
   const fl = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.12, 0), toon(0xFFFFFF), 90);
   let n = 0;
   while (n < 90) {
@@ -437,7 +447,7 @@ const heart = buildPhotoSpot();
 // ---------- clouds, plane with banner, petals ----------
 const clouds = [];
 {
-  const cg = new THREE.IcosahedronGeometry(1, 1), cm = toon(0xFFFFFF);
+  const cg = new THREE.IcosahedronGeometry(1, 1), cm = toon(0xFBFAF5);
   const puff = [[0, 0, 0, 1], [1.1, -0.15, 0.1, 0.75], [-1.05, -0.2, 0, 0.7], [0.45, 0.45, -0.1, 0.7], [-0.4, 0.35, 0.2, 0.6]];
   for (let i = 0; i < 7; i++) {
     const g = new THREE.Group();
@@ -451,7 +461,7 @@ const clouds = [];
 }
 const plane = new THREE.Group();
 {
-  const white = toon(0xFFFFFF), coral = toon(0xFF7A6B), ink = toon(0x2F4858);
+  const white = toon(0xFBFAF5), coral = toon(0xC98F72), ink = toon(0x26302F);
   const fus = mesh(new THREE.CapsuleGeometry(0.26, 1.2, 4, 10), white, 0, 0, 0, plane);
   fus.rotation.z = Math.PI / 2;
   mesh(box(0.4, 0.06, 2.4), coral, 0.1, 0, 0, plane);
@@ -459,7 +469,7 @@ const plane = new THREE.Group();
   mesh(box(0.25, 0.05, 0.8), coral, -0.75, 0.05, 0, plane);
   const prop = mesh(box(0.04, 0.75, 0.1), ink, 0.88, 0, 0, plane, false);
   plane.userData.prop = prop;
-  const bt = textTexture('See you in Okinawa! ♥', { w: 1024, h: 160, size: 84, color: '#FF7A6B', bg: '#FFFFFF', border: '#2F4858' });
+  const bt = textTexture('See you in Okinawa!', { w: 1024, h: 160, size: 92, color: '#3B4747', bg: '#FBFAF6', border: '#C4C3B6', style: 'italic', weight: 500 });
   for (const flip of [0, Math.PI]) {
     const b = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 0.7), new THREE.MeshBasicMaterial({ map: bt, transparent: true }));
     b.position.set(-3.6, 0, 0);
@@ -476,17 +486,17 @@ const petals = new THREE.InstancedMesh((() => {
   s.lineTo(0, 0.08); s.lineTo(0.03, 0.12);
   s.bezierCurveTo(0.08, 0.1, 0.1, -0.05, 0, -0.12);
   return new THREE.ShapeGeometry(s);
-})(), new THREE.MeshBasicMaterial({ color: 0xFFE4EB, side: THREE.DoubleSide }), PETALS);
+})(), new THREE.MeshBasicMaterial({ color: 0xFCE6EC, side: THREE.DoubleSide }), PETALS);
 const pState = Array.from({ length: PETALS }, () => ({ x: rand(-13, 13), y: rand(0, 14), z: rand(-13, 13), v: rand(0.4, 0.8), r: rand(0, 6), s: rand(0.8, 1.4) }));
 scene.add(petals);
 
 // ---------- stops, markers, camera ----------
 const STOPS = {
-  info:     { label: '婚禮資訊', icon: '⛪', at: [HILL.x, G + HILL.h + 5.0, HILL.z], look: [HILL.x, 2.4, HILL.z], th: -0.55, ph: 0.95, r: 15 },
-  schedule: { label: '當天流程', icon: '⏰', at: [0.3, G + 4.6, 1.2], look: [0.3, 2.3, 1.2], th: 0.08, ph: 1.0, r: 12 },
-  dress:    { label: '服裝', icon: '👕', at: [-4.5, G + 3.0, 3.4], look: [-4.5, 1.4, 3.4], th: -0.65, ph: 1.0, r: 11.5 },
-  stay:     { label: '住宿', icon: '🏨', at: [4.6, G + 5.5, -3.4], look: [4.3, 2.2, -1.8], th: 0.55, ph: 0.95, r: 16.5 },
-  photo:    { label: '照片', icon: '📸', at: [2.8, G + 4.2, 4.9], look: [2.8, 1.8, 4.9], th: 0.3, ph: 1.02, r: 11.5 },
+  info:     { label: '婚禮資訊', at: [HILL.x, G + HILL.h + 5.0, HILL.z], look: [HILL.x, 2.4, HILL.z], th: -0.55, ph: 0.95, r: 15 },
+  schedule: { label: '當天流程', at: [0.3, G + 4.6, 1.2], look: [0.3, 2.3, 1.2], th: 0.08, ph: 1.0, r: 12 },
+  dress:    { label: '服裝', at: [-4.5, G + 3.0, 3.4], look: [-4.5, 1.4, 3.4], th: -0.65, ph: 1.0, r: 11.5 },
+  stay:     { label: '住宿', at: [4.6, G + 5.5, -3.4], look: [4.3, 2.2, -1.8], th: 0.55, ph: 0.95, r: 16.5 },
+  photo:    { label: '照片', at: [2.8, G + 4.2, 4.9], look: [2.8, 1.8, 4.9], th: 0.3, ph: 1.02, r: 11.5 },
 };
 const marksEl = document.getElementById('marks');
 const marks = {};
@@ -495,7 +505,8 @@ for (const [id, s] of Object.entries(STOPS)) {
   b.type = 'button';
   b.className = 'mk';
   b.dataset.stop = id;
-  b.innerHTML = `<span class="mk-b"><span class="i">${s.icon}</span>${s.label}<span class="ck">✓</span></span>`;
+  const ic = document.querySelector(`.menu button[data-stop="${id}"] .ic`);
+  b.innerHTML = `<span class="mk-b"><span class="i">${ic ? ic.innerHTML : ''}</span>${s.label}<span class="ck"></span></span>`;
   b.addEventListener('click', e => { e.stopPropagation(); window.openStop && window.openStop(id); });
   marksEl.appendChild(b);
   marks[id] = { el: b, v: new THREE.Vector3(...s.at) };
