@@ -36,12 +36,9 @@
   .ico{display:block;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
 
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
-  /* the couple's photo as a fixed backdrop behind the island (softened a little, like the main page) */
-  .bg-photo{position:fixed;inset:0;background:url(../images/12-尾圖-相擁-desktop.jpg) 14% 0/auto 115% no-repeat;filter:saturate(.9) brightness(.98)}
-  .bg-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(247,245,239,.22),rgba(247,245,239,.08) 45%,rgba(247,245,239,.2))}
-  @media (min-aspect-ratio:1/1){ .bg-photo{background-position:center 58%;background-size:cover} }
-  body.no3d .bg-photo{filter:blur(6px) saturate(.85);transform:scale(1.08)}
-  body.no3d .bg-photo::after{background:linear-gradient(180deg,rgba(247,245,239,.5),rgba(247,245,239,.8))}
+  .bg-photo{position:fixed;inset:0;display:none;background:url(../images/01-首圖-甩婚紗-mobile.jpg) center/cover;filter:blur(6px) saturate(.85);transform:scale(1.08)}
+  .bg-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(247,245,239,.5),rgba(247,245,239,.8))}
+  body.no3d .bg-photo{display:block}
   body.no3d #scene,body.no3d #marks{display:none}
 
   /* floating markers above each spot (positioned by the 3D script) */

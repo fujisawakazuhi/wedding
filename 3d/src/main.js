@@ -23,6 +23,7 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.shadowMap.autoUpdate = false;          // refreshed every few frames in the loop
 
 const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xDFE7EB, 70, 170);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
 
 // ---------- materials & helpers ----------
@@ -46,7 +47,6 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true) {
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const cyl = (rt, rb, h, s = 16) => new THREE.CylinderGeometry(rt, rb, h, s);
 const rand = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const loader = new THREE.TextureLoader();
 function tex(url) {
   const t = loader.load(url);
@@ -99,23 +99,22 @@ sun.shadow.bias = -0.0006;
 sun.shadow.normalBias = 0.03;
 scene.add(sun);
 
-// ---------- sea: a lagoon around the island that fades out into the photo behind the canvas ----------
+// ---------- sea (lighter lagoon colour near the island) ----------
 const SEA_Y = -0.1;
-const seaGeo = new THREE.PlaneGeometry(32, 32, 48, 48);
+const seaGeo = new THREE.PlaneGeometry(280, 280, 84, 84);
 seaGeo.rotateX(-Math.PI / 2);
 const seaBase = seaGeo.attributes.position.array.slice();
 {
   const deep = new THREE.Color(0x8FB1C5), shallow = new THREE.Color(0xCDE1E3), c = new THREE.Color();
-  const ease = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-  const cols = new Float32Array(seaGeo.attributes.position.count * 4);
+  const cols = new Float32Array(seaGeo.attributes.position.count * 3);
   for (let i = 0; i < seaGeo.attributes.position.count; i++) {
     const d = Math.hypot(seaBase[i * 3], seaBase[i * 3 + 2]);
-    c.copy(shallow).lerp(deep, ease(11.2, 14, d));
-    cols.set([c.r, c.g, c.b, 1 - ease(12.4, 15, d)], i * 4);
+    c.copy(deep).lerp(shallow, THREE.MathUtils.smoothstep(24, 11, d));
+    cols.set([c.r, c.g, c.b], i * 3);
   }
-  seaGeo.setAttribute('color', new THREE.BufferAttribute(cols, 4));
+  seaGeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
 }
-const sea = new THREE.Mesh(seaGeo, new THREE.MeshPhongMaterial({ vertexColors: true, transparent: true, shininess: 50, specular: 0xDDE8E6, flatShading: true }));
+const sea = new THREE.Mesh(seaGeo, new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 50, specular: 0xDDE8E6, flatShading: true }));
 sea.position.y = SEA_Y;
 sea.receiveShadow = true;
 scene.add(sea);
@@ -445,7 +444,22 @@ const heart = buildPhotoSpot();
   scene.add(fl);
 }
 
-// ---------- plane with banner, petals ----------
+// ---------- clouds, plane with banner, petals ----------
+const clouds = [];
+{
+  const cg = new THREE.IcosahedronGeometry(1, 1), cm = toon(0xFBFAF5);
+  const puff = [[0, 0, 0, 1], [1.1, -0.15, 0.1, 0.75], [-1.05, -0.2, 0, 0.7], [0.45, 0.45, -0.1, 0.7], [-0.4, 0.35, 0.2, 0.6]];
+  for (let i = 0; i < 7; i++) {
+    const g = new THREE.Group();
+    for (const [x, y, z, r] of puff) { const m = new THREE.Mesh(cg, cm); m.position.set(x, y, z); m.scale.setScalar(r); g.add(m); }
+    const a = (i / 7) * Math.PI * 2 + rand(-0.3, 0.3);
+    g.userData = { a, r: rand(44, 64), y: rand(7, 14), s: rand(0.00006, 0.0001) };
+    g.scale.setScalar(rand(1.2, 2.0));
+    g.renderOrder = -3;                                         // drawn before the photo behind the island
+    scene.add(g);
+    clouds.push(g);
+  }
+}
 const plane = new THREE.Group();
 {
   const white = toon(0xFBFAF5), coral = toon(0xC98F72), ink = toon(0x26302F);
@@ -477,6 +491,42 @@ const petals = new THREE.InstancedMesh((() => {
 const pState = Array.from({ length: PETALS }, () => ({ x: rand(-13, 13), y: rand(0, 14), z: rand(-13, 13), v: rand(0.4, 0.8), r: rand(0, 6), s: rand(0.8, 1.4) }));
 scene.add(petals);
 
+// ---------- the couple's photo: a small polaroid standing behind the island ----------
+// Kept on the far side of the island from the camera and turned to face it. Drawn right after the sea
+// (no depth test), so the island and everything on it always cover its lower edge.
+const BK = { d: 14, y: 4, h: 12 };                           // set per layout in resize()
+const backdrop = (() => {
+  const W = 1024, H = 800, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  const img = new Image();
+  const draw = () => {
+    if (!img.complete || !img.naturalWidth) return;
+    const g = c.getContext('2d');
+    const fx = 32, fy = 40, fw = W - 64, pad = 30, pw = fw - pad * 2, ph = pw * 2 / 3, fh = pad + ph + 70;
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = '#FFFFFF'; g.fillRect(fx, fy, fw, fh);
+    g.lineWidth = 3; g.strokeStyle = '#D3D2C6'; g.strokeRect(fx + 1.5, fy + 1.5, fw - 3, fh - 3);
+    // crop around the couple, keeping pavement at the bottom (that part tucks behind the island)
+    const nw = img.naturalWidth, nh = img.naturalHeight, sw = nw * 0.62, sh = sw * 2 / 3;
+    g.drawImage(img, nw * 0.03, Math.max(0, nh - sh), sw, sh, fx + pad, fy + pad, pw, ph);
+    g.save(); g.translate(W / 2, fy + 4); g.rotate(0.03); g.fillStyle = '#E3D8C6'; g.fillRect(-110, -24, 220, 48); g.restore();
+    t.needsUpdate = true;
+  };
+  img.onload = draw;
+  img.src = IMG + '11-尾圖-相擁-mobile.jpg';
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W / H, 1), new THREE.MeshBasicMaterial({
+    map: t, alphaTest: 0.5, alphaToCoverage: true, depthTest: false, depthWrite: false, fog: false, toneMapped: false }));
+  m.renderOrder = -1;
+  m.visible = false;
+  m.userData.k = 0;
+  scene.add(m);
+  return m;
+})();
+sea.renderOrder = -2;
+
 // ---------- stops, markers, camera ----------
 const STOPS = {
   info:     { label: '婚禮資訊', at: [HILL.x, G + HILL.h + 5.0, HILL.z], look: [HILL.x, 2.4, HILL.z], th: -0.55, ph: 0.95, r: 15 },
@@ -503,14 +553,13 @@ window.dispatchEvent(new Event('wedding:marks'));
 const view = { tx: 0, ty: 1, tz: 0.8, r: 40, th: -0.6, ph: 0.85, ox: 0, oy: 0 };
 const goal = { tx: 0, ty: 1, tz: 0.8, r: 40, th: -0.6, ph: 0.85, ox: 0, oy: 0 };
 let mode = 'title', current = null, lastTouch = 0;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
 function fitR() {
   const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), th = tv * camera.aspect;
   return clamp(Math.max(10.5 / th * 0.9, 12 / tv), 20, 60);
 }
-// overview distance: a little further out on wide screens so the couple in the backdrop photo stays visible
-const mapR = () => fitR() * (camera.aspect > 1.2 ? 1.12 : 1);
-function mapGoal() { Object.assign(goal, { tx: 0, ty: 0.9, tz: 0.8, r: mapR(), ph: 0.98 }); }
+function mapGoal() { Object.assign(goal, { tx: 0, ty: 0.9, tz: 0.8, r: fitR(), ph: 0.98 }); }
 function stopGoal(id) {
   const s = STOPS[id];
   goal.tx = s.look[0]; goal.ty = s.look[1]; goal.tz = s.look[2];
@@ -580,12 +629,7 @@ function tap(x, y) {
 
 const dlg = document.getElementById('dlg');
 function panelGoal() {
-  if (mode !== 'stop' || !dlg.classList.contains('open')) {
-    // overview: island a bit higher on phones / to the right on wide screens, clear of the couple in the photo
-    goal.oy = camera.aspect < 0.8 ? window.innerHeight * 0.16 : 0;
-    goal.ox = camera.aspect > 1.2 ? -window.innerWidth * 0.12 : 0;
-    return;
-  }
+  if (mode !== 'stop' || !dlg.classList.contains('open')) { goal.ox = 0; goal.oy = 0; return; }
   const r = dlg.getBoundingClientRect();
   if (r.width > window.innerWidth * 0.8) { goal.ox = 0; goal.oy = Math.max(0, window.innerHeight - r.top) / 2; }
   else { goal.oy = 0; goal.ox = Math.max(0, window.innerWidth - r.left) / 2; }
@@ -597,8 +641,9 @@ function resize() {
   camera.aspect = w / h;
   camera.fov = camera.aspect < 0.8 ? 50 : 40;
   camera.updateProjectionMatrix();
+  Object.assign(BK, camera.aspect < 0.8 ? { y: 4, h: 12 } : { y: 2.4, h: 9 });   // less room above the island on wide screens
   if (mode === 'title') goal.r = fitR() * 1.15;
-  else if (mode === 'map') goal.r = mapR();
+  else if (mode === 'map') goal.r = fitR();
   else if (current) stopGoal(current);
 }
 window.addEventListener('resize', resize);
@@ -627,7 +672,19 @@ function frame(now) {
   else if (camera.view && camera.view.enabled) camera.clearViewOffset();
 
   updateSea(t);
+  // the photo pops up behind the island on the overview and tucks away while a panel is open
+  const bk = backdrop.userData;
+  bk.k += ((mode === 'map' ? 1 : 0) - bk.k) * (1 - Math.exp(-dt * 5));
+  backdrop.visible = bk.k > 0.02;
+  if (backdrop.visible) {
+    const a = Math.atan2(camera.position.x, camera.position.z);
+    backdrop.position.set(-Math.sin(a) * BK.d, BK.y + Math.sin(t * 0.8) * 0.15, -Math.cos(a) * BK.d);
+    backdrop.quaternion.copy(camera.quaternion);
+    backdrop.rotateZ(-0.04);
+    backdrop.scale.setScalar(BK.h * bk.k);
+  }
   for (const c of palms) { c.rotation.z = Math.sin(t * 1.3 + c.userData.phase) * 0.06; c.rotation.x = Math.cos(t * 1.1 + c.userData.phase) * 0.04; }
+  for (const c of clouds) { const u = c.userData; u.a += u.s * 60 * dt; c.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(t * 0.3 + u.a) * 0.3, Math.sin(u.a) * u.r); }
   const pa = t * 0.2;
   plane.position.set(Math.cos(pa) * 17, 10.5 + Math.sin(t * 0.8) * 0.3, Math.sin(pa) * 17);
   plane.rotation.set(0.12, Math.atan2(-Math.cos(pa), -Math.sin(pa)), 0);
