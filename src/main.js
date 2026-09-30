@@ -1,11 +1,11 @@
 // Wedding island: a small low-poly Okinawa island for the 3D wedding page.
 // Rebuild app.js after editing (three.js is bundled in):
-//   npx esbuild 3d/src/main.js --bundle --minify --format=esm --outfile=3d/app.js
+//   npx esbuild src/main.js --bundle --minify --format=esm --outfile=app.js
 import * as THREE from 'three';
 
 const canvas = document.getElementById('scene');
 const body = document.body;
-const IMG = '../images/';
+const IMG = 'images/';
 
 function giveUp() { body.classList.add('no3d'); window.__islandReady = true; }
 
