@@ -291,7 +291,7 @@ function buildHotel() {
 }
 buildHotel();
 
-// ---------- clock (當天流程) ----------
+// ---------- clock (婚禮當天流程) ----------
 const hands = {};
 function buildClock() {
   const g = new THREE.Group();
@@ -530,7 +530,7 @@ sea.renderOrder = -2;
 // ---------- stops, markers, camera ----------
 const STOPS = {
   info:     { label: '婚禮資訊', at: [HILL.x, G + HILL.h + 5.0, HILL.z], look: [HILL.x, 2.4, HILL.z], th: -0.55, ph: 0.95, r: 15 },
-  schedule: { label: '當天流程', at: [0.3, G + 4.6, 1.2], look: [0.3, 2.3, 1.2], th: 0.08, ph: 1.0, r: 12 },
+  schedule: { label: '婚禮當天流程', at: [0.3, G + 4.6, 1.2], look: [0.3, 2.3, 1.2], th: 0.08, ph: 1.0, r: 12 },
   dress:    { label: '服裝', at: [-4.5, G + 3.0, 3.4], look: [-4.5, 1.4, 3.4], th: -0.65, ph: 1.0, r: 11.5 },
   stay:     { label: '住宿', at: [4.6, G + 5.5, -3.4], look: [4.3, 2.2, -1.8], th: 0.55, ph: 0.95, r: 16.5 },
   photo:    { label: '照片', at: [2.8, G + 4.2, 4.9], look: [2.8, 1.8, 4.9], th: 0.3, ph: 1.02, r: 11.5 },
